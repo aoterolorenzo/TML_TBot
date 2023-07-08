@@ -3,12 +3,17 @@ module TML_TBot
 go 1.20
 
 require (
+	dario.cat/mergo v1.0.0
 	github.com/chromedp/chromedp v0.9.1
 	github.com/disintegration/imaging v1.6.2
 	github.com/go-telegram-bot-api/telegram-bot-api v4.6.4+incompatible
 	github.com/gocolly/colly/v2 v2.1.0
-	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
+	github.com/robfig/cron/v3 v3.0.1
+	github.com/sirupsen/logrus v1.9.3
+	gopkg.in/yaml.v3 v3.0.1
 )
+
+replace github.com/chromedp/cdproto v0.0.0-20210318231247-733a37e2c059 => github.com/chromedp/cdproto v0.0.0-20210305224431-50b9f457e822
 
 require (
 	github.com/PuerkitoBio/goquery v1.5.1 // indirect

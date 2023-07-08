@@ -1,0 +1,13 @@
+jobs:
+  - id: weather
+    cronString: "* 00 * * * *"
+    response:
+      - type: telegram
+        chatID: default
+        topicID: 204
+  - id: lineUp
+    cronString: "* 00 * * * *"
+    response:
+      - type: telegram
+        chatID: default
+        topicID: 201

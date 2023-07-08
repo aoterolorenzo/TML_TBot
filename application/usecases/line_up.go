@@ -1,4 +1,4 @@
-package controllers
+package usecases
 
 import (
 	"fmt"
@@ -105,6 +105,7 @@ func (t *TMLLineUpController) GetDiff() (string, error) {
 		//return "", nil
 	}
 
+	// Example changes to generate a diff with content
 	delete(t.lineUp["Friday 21 July 2023"]["Atmosphere"], "Adam Beyer")
 	t.lineUp["Friday 21 July 2023"]["Cage"]["Patrick Mason"] = "26:00"
 
@@ -114,6 +115,7 @@ func (t *TMLLineUpController) GetDiff() (string, error) {
 		return "", err
 	}
 
+	// Example changes to generate a diff with content
 	delete(t.lineUp["Friday 21 July 2023"]["Terra Solis"], "Mosoo")
 
 	diff, err := t.CompareLineUps(initialLineUp, updatedLineUp)
