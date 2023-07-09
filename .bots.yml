@@ -3,11 +3,11 @@ jobs:
     cronString: "* 00 * * * *"
     response:
       - type: telegram
-        chatID: default
-        topicID: 204
+        chatID: -1001949361275
+        topicID: 2641
   - id: lineUp
     cronString: "* 00 * * * *"
     response:
       - type: telegram
-        chatID: default
-        topicID: 201
+        chatID: -1001949361275
+        topicID: 000

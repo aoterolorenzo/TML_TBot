@@ -1,6 +1,7 @@
 package usecases
 
 import (
+	"TML_TBot/domain/models"
 	"fmt"
 	"github.com/gocolly/colly/v2"
 	"reflect"
@@ -15,7 +16,41 @@ type LineUp map[string]Stage
 type Stage map[string]Artist
 type Artist map[string]string
 
-func (t *TMLLineUpController) Retrieve() (LineUp, error) {
+func (t *TMLLineUpController) Run() ([]models.TGMessage, error) {
+
+	// If first run, retrieve and return no changes
+	if t.lineUp == nil {
+		_, err := t.retrieve()
+		if err != nil {
+			return nil, err
+		}
+		//return "", nil
+	}
+
+	// Example changes to generate a diff with content
+	delete(t.lineUp["Friday 21 July 2023"]["Atmosphere"], "Adam Beyer")
+	t.lineUp["Friday 21 July 2023"]["Cage"]["Patrick Mason"] = "26:00"
+
+	initialLineUp := t.lineUp
+	updatedLineUp, err := t.retrieve()
+	if err != nil {
+		return nil, err
+	}
+
+	// Example changes to generate a diff with content
+	delete(t.lineUp["Friday 21 July 2023"]["Terra Solis"], "Mosoo")
+
+	diff, err := t.compareLineUps(initialLineUp, updatedLineUp)
+	if err != nil {
+		return nil, err
+	}
+
+	return []models.TGMessage{
+		{diff, nil, models.KindMessage},
+	}, nil
+}
+
+func (t *TMLLineUpController) retrieve() (LineUp, error) {
 
 	c := colly.NewCollector()
 	lineUp := make(LineUp)
@@ -46,7 +81,7 @@ func (t *TMLLineUpController) Retrieve() (LineUp, error) {
 	return lineUp, err
 }
 
-func (t *TMLLineUpController) CompareLineUps(lineUp1 LineUp, lineUp2 LineUp) (string, error) {
+func (t *TMLLineUpController) compareLineUps(lineUp1 LineUp, lineUp2 LineUp) (string, error) {
 
 	var diff strings.Builder
 
@@ -92,38 +127,4 @@ func (t *TMLLineUpController) CompareLineUps(lineUp1 LineUp, lineUp2 LineUp) (st
 	}
 
 	return diff.String(), nil
-}
-
-func (t *TMLLineUpController) GetDiff() (string, error) {
-
-	// If first run, retrieve and return no changes
-	if t.lineUp == nil {
-		_, err := t.Retrieve()
-		if err != nil {
-			return "", err
-		}
-		//return "", nil
-	}
-
-	// Example changes to generate a diff with content
-	delete(t.lineUp["Friday 21 July 2023"]["Atmosphere"], "Adam Beyer")
-	t.lineUp["Friday 21 July 2023"]["Cage"]["Patrick Mason"] = "26:00"
-
-	initialLineUp := t.lineUp
-	updatedLineUp, err := t.Retrieve()
-	if err != nil {
-		return "", err
-	}
-
-	// Example changes to generate a diff with content
-	delete(t.lineUp["Friday 21 July 2023"]["Terra Solis"], "Mosoo")
-
-	diff, err := t.CompareLineUps(initialLineUp, updatedLineUp)
-	if err != nil {
-		return "", err
-	}
-
-	fmt.Println(diff)
-
-	return diff, nil
 }

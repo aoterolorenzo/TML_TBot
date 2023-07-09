@@ -5,8 +5,8 @@ type Job struct {
 	CronString string `yaml:"cronString"`
 	Response   []struct {
 		Type    string `yaml:"type"`
-		ChatID  string `yaml:"chatID"`
-		TopicID string `yaml:"topicID"`
+		ChatID  ChatID `yaml:"chatID"`
+		TopicID Topic  `yaml:"topicID"`
 	} `yaml:"response"`
 }
 
@@ -23,10 +23,6 @@ const (
 	KindAnimation Kind = 0
 	KindMedia          = 1
 	KindMessage        = 2
-)
-
-const (
-	TMLChatID ChatID = -1001949361275
 )
 
 type TGMessageArray []TGMessage

@@ -4,7 +4,6 @@ import (
 	"TML_TBot/domain/models"
 	"bytes"
 	"context"
-	"fmt"
 	"github.com/chromedp/chromedp"
 	"github.com/disintegration/imaging"
 	"image"
@@ -86,11 +85,11 @@ func (w *WeatherController) Run() ([]models.TGMessage, error) {
 		return nil, err
 	}
 
-	// Save the cropped image to a file
-	file := fmt.Sprintf("./dir/cropped--report-%s.png", target.Name)
-	if err := ioutil.WriteFile(file, croppedBuf.Bytes(), 0o644); err != nil {
-		return nil, err
-	}
+	//// Save the cropped image to a file
+	//file := fmt.Sprintf("./assets/cropped--report-%s.png", target.Name)
+	//if err := ioutil.WriteFile(file, croppedBuf.Bytes(), 0o644); err != nil {
+	//	return nil, err
+	//}
 
 	currentDate := time.Now().Format("02/01/2006")
 	text := `Previsión del tiempo Accuweather <b>` + currentDate + `</b>`
