@@ -1,13 +1,18 @@
 jobs:
   - id: weather
-    cronString: "00 12 * * *"
+    cronString: "* 00 * * * *"
     response:
       - type: telegram
         chatID: -1001949361275
         topicID: 2641
   - id: lineUp
-    cronString: "*/30 * * * *"
+    cronString: "* 00 * * * *"
     response:
       - type: telegram
         chatID: -1001949361275
         topicID: 139
+  - id: helloWorld
+    cronString: "* /2 * * * *"
+    reponse:
+      - type: telegram
+        chatID: 38840963
