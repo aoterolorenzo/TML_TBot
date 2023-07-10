@@ -19,9 +19,8 @@ func NewProcessor(cron *CronWorker, telegram *connectors.TelegramService) *Proce
 }
 
 // RunUseCase runs the use case of a job, preparing and executing the proper response based on job settings
-func (p *Processor) RunUseCase(job models.Job) {
+func (p *Processor) RunUseCase(job models.Job, useCase interfaces.UseCase) {
 
-	useCase := parseUseCase(job.ID)
 	res, err := useCase.Run()
 	if err != nil {
 		config.Log.Error()
@@ -63,9 +62,15 @@ func (p *Processor) RunUseCase(job models.Job) {
 // StartCronBot Reads the jobs in the settings and creates a cronjob entry for each one together with its execution function
 func (p *Processor) StartCronBot() {
 	for _, job := range config.Settings.Jobs {
-		err := p.cronWorker.AddToCron(job, func() { p.RunUseCase(job) })
-		if err != nil {
-			config.Log.Error(err)
+		config.Log.Infof("Preparing %s job", job.ID)
+		useCase := parseUseCase(job.ID)
+		if useCase != nil {
+			err := p.cronWorker.AddToCron(job, func() { p.RunUseCase(job, useCase) })
+			if err != nil {
+				config.Log.Error(err)
+			}
+		} else {
+			config.Log.Infof("Skipping  %s job", job.ID)
 		}
 	}
 	p.cronWorker.Cron.Start()
@@ -83,7 +88,9 @@ func (p *Processor) RubJobById(jobID string) error {
 		return errors.New("job not found in config")
 	}
 
-	p.RunUseCase(foundJob)
+	useCase := parseUseCase(foundJob.ID)
+
+	p.RunUseCase(foundJob, useCase)
 	return nil
 }
 
@@ -95,6 +102,6 @@ func parseUseCase(str string) interfaces.UseCase {
 	case "lineUp":
 		return usecases.NewTMLLineUpController()
 	}
-	config.Log.Fatal("unparseable job")
+	config.Log.Errorf("Unparseable %s job", str)
 	return nil
 }

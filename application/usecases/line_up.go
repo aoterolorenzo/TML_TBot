@@ -129,7 +129,7 @@ func (t *TMLLineUpController) compareLineUps(lineUp1 LineUp, lineUp2 LineUp) (st
 					}
 					if len(lineUp2[day][stage]) >= 0 {
 						for a1, t2 := range lineUp2[day][stage] {
-							artistsDiff.Write([]byte(fmt.Sprintf("✅ Añadido <i>%s</i> a las <i>%s</i>)\n", a1, t2))) //stage, day
+							artistsDiff.Write([]byte(fmt.Sprintf("✅ Añadido <i>%s</i> a las <i>%s</i>\n", a1, t2))) //stage, day
 						}
 					}
 				}

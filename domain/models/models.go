@@ -15,11 +15,6 @@ type ChatID int64
 type Kind int64
 
 const (
-	TopicElTiempo Topic = 2641
-	TopicLineUp         = 1
-)
-
-const (
 	KindAnimation Kind = 0
 	KindMedia          = 1
 	KindMessage        = 2
