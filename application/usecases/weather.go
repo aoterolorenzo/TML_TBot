@@ -92,7 +92,10 @@ func (w *WeatherController) Run() ([]models.TGMessage, error) {
 	//}
 
 	currentDate := time.Now().Format("02/01/2006")
-	text := `Previsión del tiempo Accuweather <b>` + currentDate + `</b>`
+	text := ` 
+Previsión del tiempo Accuweather <b>` + currentDate + `</b>
+ 
++info: https://www.accuweather.com/es/be/boom/27002/july-weather/27002`
 	cbbytes := croppedBuf.Bytes()
 
 	msg1 := models.NewTGMessage(text, &cbbytes, models.KindMedia)

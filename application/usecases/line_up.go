@@ -1,15 +1,30 @@
 package usecases
 
 import (
+	"TML_TBot/config"
 	"TML_TBot/domain/models"
+	"encoding/json"
 	"fmt"
 	"github.com/gocolly/colly/v2"
+	"io/ioutil"
 	"reflect"
 	"strings"
 )
 
 type TMLLineUpController struct {
 	lineUp LineUp
+}
+
+const CACHE_FILE = "./.cache/lastLineUp.json"
+
+func NewTMLLineUpController() *TMLLineUpController {
+	var lineUp LineUp
+	err := readJSONFileToStruct(&lineUp, CACHE_FILE)
+	if err != nil {
+		config.Log.Fatal(err)
+	}
+	c := &TMLLineUpController{lineUp: lineUp}
+	return c
 }
 
 type LineUp map[string]Stage
@@ -28,8 +43,8 @@ func (t *TMLLineUpController) Run() ([]models.TGMessage, error) {
 	}
 
 	// Example changes to generate a diff with content
-	delete(t.lineUp["Friday 21 July 2023"]["Atmosphere"], "Adam Beyer")
-	t.lineUp["Friday 21 July 2023"]["Cage"]["Patrick Mason"] = "26:00"
+	//delete(t.lineUp["Friday 21 July 2023"]["Atmosphere"], "Adam Beyer")
+	//t.lineUp["Friday 21 July 2023"]["Cage"]["Patrick Mason"] = "26:00"
 
 	initialLineUp := t.lineUp
 	updatedLineUp, err := t.retrieve()
@@ -38,7 +53,7 @@ func (t *TMLLineUpController) Run() ([]models.TGMessage, error) {
 	}
 
 	// Example changes to generate a diff with content
-	delete(t.lineUp["Friday 21 July 2023"]["Terra Solis"], "Mosoo")
+	//delete(t.lineUp["Friday 21 July 2023"]["Terra Solis"], "Mosoo")
 
 	diff, err := t.compareLineUps(initialLineUp, updatedLineUp)
 	if err != nil {
@@ -78,6 +93,11 @@ func (t *TMLLineUpController) retrieve() (LineUp, error) {
 
 	t.lineUp = lineUp
 
+	err = saveStructToJSONFile(lineUp, CACHE_FILE)
+	if err != nil {
+		return nil, err
+	}
+
 	return lineUp, err
 }
 
@@ -96,12 +116,12 @@ func (t *TMLLineUpController) compareLineUps(lineUp1 LineUp, lineUp2 LineUp) (st
 
 						if !exists {
 							// Eliminado artist
-							artistsDiff.Write([]byte(fmt.Sprintf("- Eliminado %s (%s)\n", artist, time))) //stage, day
+							artistsDiff.Write([]byte(fmt.Sprintf("❌ Eliminado <i>%s</i> (<i>%s</i>)\n", artist, time))) //stage, day
 
 						} else {
 							// Existen ambos
 							if t1 != time {
-								artistsDiff.Write([]byte(fmt.Sprintf("- %s se mueve de las %s a las %s\n", artist, t1, time)))
+								artistsDiff.Write([]byte(fmt.Sprintf("🔃 <i>%s</i> se mueve de las <i>%s</i> a las <i>%s</i>\n", artist, t1, time)))
 							}
 							delete(lineUp2[day][stage], artist)
 						}
@@ -109,22 +129,50 @@ func (t *TMLLineUpController) compareLineUps(lineUp1 LineUp, lineUp2 LineUp) (st
 					}
 					if len(lineUp2[day][stage]) >= 0 {
 						for a1, t2 := range lineUp2[day][stage] {
-							artistsDiff.Write([]byte(fmt.Sprintf("- Añadido %s a las (%s)\n", a1, t2))) //stage, day
+							artistsDiff.Write([]byte(fmt.Sprintf("✅ Añadido <i>%s</i> a las <i>%s</i>)\n", a1, t2))) //stage, day
 						}
 					}
 				}
 				if artistsDiff.String() != "" {
-					stagesDiff.Write([]byte(fmt.Sprintf("%s Stage\n", stage)))
+					stagesDiff.Write([]byte(fmt.Sprintf("<b>%s Stage</b>\n", stage)))
 					stagesDiff.Write([]byte(artistsDiff.String()))
 					stagesDiff.Write([]byte("\n"))
 				}
 			}
 		}
 		if stagesDiff.String() != "" {
-			diff.Write([]byte(fmt.Sprintf("----- %s ----\n\n", day)))
+			diff.Write([]byte(fmt.Sprintf("🗓<b>%s</b>🗓\n\n", day)))
 			diff.Write([]byte(stagesDiff.String()))
 		}
 	}
 
 	return diff.String(), nil
+}
+
+func saveStructToJSONFile(data interface{}, filename string) error {
+	jsonData, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	err = ioutil.WriteFile(filename, jsonData, 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func readJSONFileToStruct(data interface{}, filename string) error {
+	jsonData, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(jsonData, &data)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

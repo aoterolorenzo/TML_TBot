@@ -29,30 +29,31 @@ func (p *Processor) RunUseCase(job models.Job) {
 
 	for _, msg := range res {
 		for _, target := range job.Response {
+			if msg.MSG != "" || msg.Media != nil {
+				switch msg.Kind {
+				case models.KindMessage:
+					err := p.telegram.SendMessage(msg.MSG, target.ChatID, &target.TopicID)
+					if err != nil {
+						config.Log.Fatal(err)
+						return
+					}
+					break
+				case models.KindAnimation:
+					err := p.telegram.SendAnimation(msg.MSG, msg.Media, target.ChatID, &target.TopicID)
+					if err != nil {
+						config.Log.Fatal(err)
+						return
+					}
+					break
+				case models.KindMedia:
+					err := p.telegram.SendMedia(msg.MSG, msg.Media, target.ChatID, &target.TopicID)
+					if err != nil {
+						config.Log.Fatal(err)
+						return
+					}
+					break
 
-			switch msg.Kind {
-			case models.KindMessage:
-				err := p.telegram.SendMessage(msg.MSG, target.ChatID, &target.TopicID)
-				if err != nil {
-					config.Log.Fatal(err)
-					return
 				}
-				break
-			case models.KindAnimation:
-				err := p.telegram.SendAnimation(msg.MSG, msg.Media, target.ChatID, &target.TopicID)
-				if err != nil {
-					config.Log.Fatal(err)
-					return
-				}
-				break
-			case models.KindMedia:
-				err := p.telegram.SendMedia(msg.MSG, msg.Media, target.ChatID, &target.TopicID)
-				if err != nil {
-					config.Log.Fatal(err)
-					return
-				}
-				break
-
 			}
 		}
 
@@ -92,7 +93,7 @@ func parseUseCase(str string) interfaces.UseCase {
 	case "weather":
 		return &usecases.WeatherController{}
 	case "lineUp":
-		return &usecases.TMLLineUpController{}
+		return usecases.NewTMLLineUpController()
 	}
 	config.Log.Fatal("unparseable job")
 	return nil
