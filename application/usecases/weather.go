@@ -31,7 +31,7 @@ func screenshot(target Target, quality int, res *[]byte) chromedp.Tasks {
 		chromedp.ActionFunc(func(ctx context.Context) error {
 			// Hide specific divs
 			var x string
-			chromedp.EvaluateAsDevTools(`document.querySelectorAll('#top, .lbar-banner, .privacy-policy-banner, .fc-dialog-overlay, .fc-dialog-container, .fc-consent-root')
+			chromedp.EvaluateAsDevTools(`document.querySelectorAll('.monthly-calendar > :first-child, #top, .lbar-banner, .privacy-policy-banner, .fc-dialog-overlay, .fc-dialog-container, .fc-consent-root')
 					.forEach(function(el) {
 						el.parentNode.removeChild(el);
 					});
@@ -75,7 +75,7 @@ func (w *WeatherController) Run() ([]models.TGMessage, error) {
 	}
 
 	// Define the area to be cropped
-	cropArea := image.Rect(20, 690, 600, 1180) // Example: (x1, y1, x2, y2)
+	cropArea := image.Rect(20, 670, 600, 1160) // Example: (x1, y1, x2, y2)
 	// Crop the image to the specified area
 	croppedImg := imaging.Crop(img, cropArea)
 
