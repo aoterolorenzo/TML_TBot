@@ -101,8 +101,8 @@ func parseUseCase(str string) interfaces.UseCase {
 		return &usecases.WeatherController{}
 	case "lineUp":
 		return usecases.NewTMLLineUpController()
-	case "helloWorld":
-		return usecases.NewHelloWorldController()
+	case "instagramPost":
+		return usecases.NewInstagramPostsController()
 	}
 	config.Log.Errorf("Unparseable %s job", str)
 	return nil

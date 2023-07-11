@@ -11,8 +11,8 @@ jobs:
       - type: telegram
         chatID: -1001949361275
         topicID: 139
-  - id: helloWorld
-    cronString: "* /2 * * * *"
-    reponse:
+  - id: instagramPost
+    cronString: "* /5 * * * *"
+    response:
       - type: telegram
         chatID: 38840963
