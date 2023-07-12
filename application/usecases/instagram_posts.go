@@ -77,7 +77,7 @@ func itemsToMessages(items []FeedItem) []models.TGMessage {
 
 func getRecentMedia(insta *goinsta.Instagram, t *InstagramPostsController) ([]FeedItem, CodesSet, error) {
 
-	codes := make(CodesSet)
+	missingCodes := make(CodesSet)
 	var member void
 
 	acc := "tomorrowland"
@@ -92,29 +92,44 @@ func getRecentMedia(insta *goinsta.Instagram, t *InstagramPostsController) ([]Fe
 	num_retrieved_feeds := 5
 
 	for _, item := range feed.Items[0:num_retrieved_feeds] {
+		if _, ok := t.codes[item.Code]; !ok {
+			image, err := downloadFile(item.Images.Versions[0].URL)
+			if err != nil {
+				fmt.Println("Error downloading image", err)
+			}
+			cbbytes := imageToByteArray(image)
 
-		image, err := downloadFile(item.Images.Versions[0].URL)
-		if err != nil {
-			fmt.Println("Error downloading image", err)
+			text := `<b>` + item.Caption.Text + "\n\n" + `</b>+Info: ` + fmt.Sprintf("https://www.instagram.com/p/%s/?img_index=1", item.Code)
+
+			var current_item = FeedItem{text: text, image: &cbbytes}
+
+			missingCodes[item.Code] = member
+			items = append(items, current_item)
 		}
-		cbbytes := imageToByteArray(image)
-
-		text := `<b>` + item.Caption.Text + "\n\n" + `</b>+Info: ` + fmt.Sprintf("https://www.instagram.com/p/%s/?img_index=1", item.Code)
-
-		var current_item = FeedItem{text: text, image: &cbbytes}
-
-		codes[item.Code] = member
-		items = append(items, current_item)
 	}
 
-	t.codes = codes
+	// Merge missing codes with existing codes
+	t.codes = mergeCodes(t.codes, missingCodes)
 
-	err = saveStructToJSONFile(t.codes, INSTAGRAM_CACHE_FILE)
-	if err != nil {
-		return nil, nil, err
+	if len(missingCodes) > 0 {
+		err = saveStructToJSONFile(t.codes, INSTAGRAM_CACHE_FILE)
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 
 	return items, t.codes, err
+}
+
+func mergeCodes(existingCodes, missingCodes CodesSet) CodesSet {
+	mergedCodes := make(CodesSet)
+	for code := range existingCodes {
+		mergedCodes[code] = void{}
+	}
+	for code := range missingCodes {
+		mergedCodes[code] = void{}
+	}
+	return mergedCodes
 }
 
 func imageToByteArray(image image.Image) []byte {
