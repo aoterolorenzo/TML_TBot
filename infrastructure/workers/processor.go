@@ -53,6 +53,8 @@ func (p *Processor) RunUseCase(job models.Job, useCase interfaces.UseCase) {
 					break
 
 				}
+			} else {
+				config.Log.Infof("Job finished successfully with no messages to send")
 			}
 		}
 
@@ -87,6 +89,8 @@ func (p *Processor) RubJobById(jobID string) error {
 	if foundJob.ID == "" {
 		return errors.New("job not found in config")
 	}
+
+	config.Log.Infof("Executing %s job", foundJob.ID)
 
 	useCase := parseUseCase(foundJob.ID)
 

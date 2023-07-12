@@ -14,7 +14,7 @@ type TelegramService struct {
 func NewTelegramService() *TelegramService {
 	bot, err := tgbotapi.NewBotAPI(os.Getenv("TOKEN"))
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Cannot get TOKEN from env var")
 	}
 
 	return &TelegramService{
