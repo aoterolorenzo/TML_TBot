@@ -20,14 +20,13 @@ const CACHE_FILE = "./.cache/lastLineUp.json"
 func NewTMLLineUpController() *TMLLineUpController {
 	var lineUp LineUp
 	err := readJSONFileToStruct(&lineUp, CACHE_FILE)
+	c := &TMLLineUpController{lineUp: lineUp}
 	if err != nil {
 		config.Log.Info("Cached line up not found. Retrieving new one...")
-	}
-
-	c := &TMLLineUpController{lineUp: lineUp}
-	c.lineUp, err = c.retrieve()
-	if err != nil {
-		config.Log.Error(err)
+		c.lineUp, err = c.retrieve()
+		if err != nil {
+			config.Log.Error(err)
+		}
 	}
 	return c
 }
