@@ -5,21 +5,22 @@ import (
 	"TML_TBot/domain/models"
 	"encoding/json"
 	"fmt"
-	"github.com/gocolly/colly/v2"
 	"io/ioutil"
 	"reflect"
 	"strings"
+
+	"github.com/gocolly/colly/v2"
 )
 
 type TMLLineUpController struct {
 	lineUp LineUp
 }
 
-const CACHE_FILE = "./.cache/lastLineUp.json"
+const LINEUP_CACHE_FILE = "./.cache/lastLineUp.json"
 
 func NewTMLLineUpController() *TMLLineUpController {
 	var lineUp LineUp
-	err := readJSONFileToStruct(&lineUp, CACHE_FILE)
+	err := readJSONFileToStruct(&lineUp, LINEUP_CACHE_FILE)
 	if err != nil {
 		config.Log.Fatal(err)
 	}
@@ -93,7 +94,7 @@ func (t *TMLLineUpController) retrieve() (LineUp, error) {
 
 	t.lineUp = lineUp
 
-	err = saveStructToJSONFile(lineUp, CACHE_FILE)
+	err = saveStructToJSONFile(lineUp, LINEUP_CACHE_FILE)
 	if err != nil {
 		return nil, err
 	}

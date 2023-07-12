@@ -1,6 +1,7 @@
 package usecases
 
 import (
+	"TML_TBot/config"
 	"TML_TBot/domain/models"
 	"bytes"
 	"fmt"
@@ -13,17 +14,27 @@ import (
 )
 
 type InstagramPostsController struct {
-	message string
+	feedItems []FeedItem
+	codes     Codes
 }
 
-type feedItem struct {
+type FeedItem struct {
 	text  string
 	image *[]byte
 }
 
+type Codes []string
+
+const INSTAGRAM_CACHE_FILE = "./.cache/lastInstagramPosts.json"
+
 func NewInstagramPostsController() *InstagramPostsController {
-	var message string = "Test msg..."
-	c := &InstagramPostsController{message: message}
+	var feedItems []FeedItem
+	var codes Codes
+	err := readJSONFileToStruct(&codes, INSTAGRAM_CACHE_FILE)
+	if err != nil {
+		config.Log.Fatal(err)
+	}
+	c := &InstagramPostsController{feedItems: feedItems}
 	return c
 }
 
@@ -35,18 +46,25 @@ func (t *InstagramPostsController) Run() ([]models.TGMessage, error) {
 		fmt.Print("Error login")
 	}
 
-	items := getRecentMedia(insta)
+	items, err := getRecentMedia(insta, t)
+	messages := itemsToMessages(items)
 
-	return []models.TGMessage{
-		{
-			MSG:   items[0].text,
-			Media: items[0].image,
-			Kind:  models.KindMedia},
-	}, nil
+	fmt.Println(messages)
+
+	return messages, nil
 
 }
 
-func getRecentMedia(insta *goinsta.Instagram) []feedItem {
+func itemsToMessages(items []FeedItem) []models.TGMessage {
+	messages := []models.TGMessage{}
+	for _, item := range items {
+		message := models.TGMessage{MSG: item.text, Media: item.image, Kind: models.KindMedia}
+		messages = append(messages, message)
+	}
+	return messages
+}
+
+func getRecentMedia(insta *goinsta.Instagram, t *InstagramPostsController) ([]FeedItem, error) {
 
 	acc := "tomorrowland"
 	profile, err := insta.VisitProfile(acc)
@@ -55,9 +73,11 @@ func getRecentMedia(insta *goinsta.Instagram) []feedItem {
 	}
 
 	feed := profile.Feed
-	var items []feedItem
+	var items []FeedItem
 
-	for _, item := range feed.Items[0:1] {
+	num_retrieved_feeds := 5
+
+	for _, item := range feed.Items[0:num_retrieved_feeds] {
 
 		image, err := downloadFile(item.Images.Versions[0].URL)
 		if err != nil {
@@ -65,12 +85,20 @@ func getRecentMedia(insta *goinsta.Instagram) []feedItem {
 		}
 		cbbytes := imageToByteArray(image)
 
-		text := `<b>` + item.Caption.Text + `</b> +info: ` + fmt.Sprintf("https://www.instagram.com/p/%s/?img_index=1", item.Code)
+		text := `<b>` + item.Caption.Text + "\n\n" + `</b>+Info: ` + fmt.Sprintf("https://www.instagram.com/p/%s/?img_index=1", item.Code)
 
-		var current_item = feedItem{text: text, image: &cbbytes}
+		var current_item = FeedItem{text: text, image: &cbbytes}
+
+		t.codes = append(t.codes, item.Code)
 		items = append(items, current_item)
 	}
-	return items
+
+	err = saveStructToJSONFile(t.codes, INSTAGRAM_CACHE_FILE)
+	if err != nil {
+		return nil, err
+	}
+
+	return items, err
 }
 
 func imageToByteArray(image image.Image) []byte {
