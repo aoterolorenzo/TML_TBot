@@ -9,13 +9,14 @@ import (
 	"image/png"
 	"net/http"
 	"os"
+	"reflect"
 
 	"github.com/Davincible/goinsta/v3"
 )
 
 type InstagramPostsController struct {
 	feedItems []FeedItem
-	codes     Codes
+	codes     CodesSet
 }
 
 type FeedItem struct {
@@ -23,13 +24,16 @@ type FeedItem struct {
 	image *[]byte
 }
 
-type Codes []string
+// Use a set to avoid duplicate codes
+type CodesSet map[string]void
+
+type void struct{}
 
 const INSTAGRAM_CACHE_FILE = "./.cache/lastInstagramPosts.json"
 
 func NewInstagramPostsController() *InstagramPostsController {
-	var codes Codes
-	err := readJSONFileToStruct(&codes, LINEUP_CACHE_FILE)
+	var codes CodesSet
+	err := readJSONFileToStruct(&codes, INSTAGRAM_CACHE_FILE)
 	if err != nil {
 		config.Log.Info("Cached posts not found. Starting from ground...")
 	}
@@ -46,11 +50,18 @@ func (t *InstagramPostsController) Run() ([]models.TGMessage, error) {
 		fmt.Print("Error login")
 	}
 
-	items, err := getRecentMedia(insta, t)
+	initialCodes := t.codes
+	items, updatedCodes, err := getRecentMedia(insta, t)
+
+	// If there are no new posts then we don't send anything
+	if reflect.DeepEqual(initialCodes, updatedCodes) {
+		return []models.TGMessage{
+			{MSG: "", Media: nil, Kind: models.KindMedia},
+		}, nil
+	}
+
+	// Transform the items information to TGMessage objects
 	messages := itemsToMessages(items)
-
-	fmt.Println(messages)
-
 	return messages, nil
 
 }
@@ -64,7 +75,10 @@ func itemsToMessages(items []FeedItem) []models.TGMessage {
 	return messages
 }
 
-func getRecentMedia(insta *goinsta.Instagram, t *InstagramPostsController) ([]FeedItem, error) {
+func getRecentMedia(insta *goinsta.Instagram, t *InstagramPostsController) ([]FeedItem, CodesSet, error) {
+
+	codes := make(CodesSet)
+	var member void
 
 	acc := "tomorrowland"
 	profile, err := insta.VisitProfile(acc)
@@ -89,16 +103,18 @@ func getRecentMedia(insta *goinsta.Instagram, t *InstagramPostsController) ([]Fe
 
 		var current_item = FeedItem{text: text, image: &cbbytes}
 
-		t.codes = append(t.codes, item.Code)
+		codes[item.Code] = member
 		items = append(items, current_item)
 	}
 
+	t.codes = codes
+
 	err = saveStructToJSONFile(t.codes, INSTAGRAM_CACHE_FILE)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return items, err
+	return items, t.codes, err
 }
 
 func imageToByteArray(image image.Image) []byte {
