@@ -98,6 +98,15 @@ func (p *Processor) RubJobById(jobID string) error {
 	return nil
 }
 
+func (p *Processor) RunAllJobs() error {
+	for _, job := range config.Settings.Jobs {
+		config.Log.Infof("Executing %s job", job.ID)
+		useCase := parseUseCase(job.ID)
+		p.RunUseCase(job, useCase)
+	}
+	return nil
+}
+
 // parseUseCase Parse a job.ID and returns its related use case
 func parseUseCase(str string) interfaces.UseCase {
 	switch str {
