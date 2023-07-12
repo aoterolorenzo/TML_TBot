@@ -28,13 +28,13 @@ type Codes []string
 const INSTAGRAM_CACHE_FILE = "./.cache/lastInstagramPosts.json"
 
 func NewInstagramPostsController() *InstagramPostsController {
-	var feedItems []FeedItem
 	var codes Codes
-	err := readJSONFileToStruct(&codes, INSTAGRAM_CACHE_FILE)
+	err := readJSONFileToStruct(&codes, LINEUP_CACHE_FILE)
 	if err != nil {
-		config.Log.Fatal(err)
+		config.Log.Info("Cached posts not found. Starting from ground...")
 	}
-	c := &InstagramPostsController{feedItems: feedItems}
+
+	c := &InstagramPostsController{codes: codes}
 	return c
 }
 

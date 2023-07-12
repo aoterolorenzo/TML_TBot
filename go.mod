@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	dario.cat/mergo v1.0.0
+	github.com/Davincible/goinsta/v3 v3.2.6
 	github.com/chromedp/chromedp v0.9.1
 	github.com/disintegration/imaging v1.6.2
 	github.com/go-telegram-bot-api/telegram-bot-api v4.6.4+incompatible
@@ -17,7 +18,6 @@ require (
 replace github.com/chromedp/cdproto v0.0.0-20210318231247-733a37e2c059 => github.com/chromedp/cdproto v0.0.0-20210305224431-50b9f457e822
 
 require (
-	github.com/Davincible/goinsta/v3 v3.2.6 // indirect
 	github.com/PuerkitoBio/goquery v1.5.1 // indirect
 	github.com/andybalholm/cascadia v1.2.0 // indirect
 	github.com/antchfx/htmlquery v1.2.3 // indirect
