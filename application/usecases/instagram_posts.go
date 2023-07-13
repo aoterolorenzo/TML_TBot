@@ -25,11 +25,10 @@ type FeedItem struct {
 }
 
 // Use a set to avoid duplicate codes
-type CodesSet map[string]void
-
-type void struct{}
+type CodesSet map[string]any
 
 const INSTAGRAM_CACHE_FILE = "./.cache/lastInstagramPosts.json"
+const INSTAGRAM_LOGIN_CACHE_FILE = "./.cache/.goinsta"
 
 func NewInstagramPostsController() *InstagramPostsController {
 	var codes CodesSet
@@ -45,19 +44,19 @@ func NewInstagramPostsController() *InstagramPostsController {
 func (t *InstagramPostsController) Run() ([]models.TGMessage, error) {
 
 	var insta *goinsta.Instagram
-	insta, err := goinsta.Import("./.cache/.goinsta")
+	insta, err := goinsta.Import(INSTAGRAM_LOGIN_CACHE_FILE)
 	if err != nil {
-		fmt.Println("Cookies not found. Login in with user/password...")
+		config.Log.Info("Cookies not found. Login in with user/password...")
 		insta = goinsta.New(os.Getenv("ig_user"), os.Getenv("ig_pass"))
 		err := insta.Login()
 		if err != nil {
-			fmt.Println(err)
+			config.Log.Fatal("Error login.", err)
 		}
 		defer func(ins *goinsta.Instagram, path string) {
 			err := ins.Export(path)
 			if err != nil {
 			}
-		}(insta, "./.cache/.goinsta")
+		}(insta, INSTAGRAM_LOGIN_CACHE_FILE)
 	}
 
 	initialCodes := t.codes
@@ -88,12 +87,11 @@ func itemsToMessages(items []FeedItem) []models.TGMessage {
 func getRecentMedia(insta *goinsta.Instagram, t *InstagramPostsController) ([]FeedItem, CodesSet, error) {
 
 	missingCodes := make(CodesSet)
-	var member void
 
 	acc := "tomorrowland"
 	profile, err := insta.VisitProfile(acc)
 	if err != nil {
-		fmt.Println("Cannot visit profile", err)
+		config.Log.Fatal("Cannot visit instagram profile", err)
 	}
 
 	feed := profile.Feed
@@ -105,7 +103,7 @@ func getRecentMedia(insta *goinsta.Instagram, t *InstagramPostsController) ([]Fe
 		if _, ok := t.codes[item.Code]; !ok {
 			image, err := downloadFile(item.Images.Versions[0].URL)
 			if err != nil {
-				fmt.Println("Error downloading image", err)
+				config.Log.Fatal("Error downloading image", err)
 			}
 			cbbytes := imageToByteArray(image)
 
@@ -113,7 +111,7 @@ func getRecentMedia(insta *goinsta.Instagram, t *InstagramPostsController) ([]Fe
 
 			var current_item = FeedItem{text: text, image: &cbbytes}
 
-			missingCodes[item.Code] = member
+			missingCodes[item.Code] = nil
 			items = append(items, current_item)
 		}
 	}
@@ -134,10 +132,10 @@ func getRecentMedia(insta *goinsta.Instagram, t *InstagramPostsController) ([]Fe
 func mergeCodes(existingCodes, missingCodes CodesSet) CodesSet {
 	mergedCodes := make(CodesSet)
 	for code := range existingCodes {
-		mergedCodes[code] = void{}
+		mergedCodes[code] = nil
 	}
 	for code := range missingCodes {
-		mergedCodes[code] = void{}
+		mergedCodes[code] = nil
 	}
 	return mergedCodes
 }
@@ -146,7 +144,7 @@ func imageToByteArray(image image.Image) []byte {
 	buff := new(bytes.Buffer)
 	err := png.Encode(buff, image)
 	if err != nil {
-		fmt.Println("failed to create buffer", err)
+		config.Log.Fatal("failed to create buffer", err)
 	}
 	cbbytes := buff.Bytes()
 	return cbbytes
@@ -155,7 +153,7 @@ func imageToByteArray(image image.Image) []byte {
 func downloadFile(url string) (image.Image, error) {
 	response, err := http.Get(url)
 	if err != nil {
-		fmt.Print("Error downloading instagram image")
+		config.Log.Fatal("Error downloading instagram image")
 	}
 	defer response.Body.Close()
 	image, _, err := image.Decode(response.Body)
