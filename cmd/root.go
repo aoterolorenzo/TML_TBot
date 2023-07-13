@@ -7,6 +7,7 @@ import (
 )
 
 func init() {
+	jobCmd.Flags().Bool("all", false, "Executes all the use cases")
 	rootCmd.AddCommand(jobCmd)
 }
 

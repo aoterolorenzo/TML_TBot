@@ -15,20 +15,27 @@ var jobCmd = &cobra.Command{
 }
 
 func executeJob(cmd *cobra.Command, args []string) {
-	// Check if at least one argument is provided
-	if len(args) < 1 {
-		fmt.Println("Missing argument. Please provide the required argument.")
-		return
-	}
-
-	// Access the argument
-	jobID := args[0]
 	cron := workers.NewCronWorker()
 	tgService := connectors.NewTelegramService()
 	processor := workers.NewProcessor(&cron, tgService)
-	err := processor.RubJobById(jobID)
-	if err != nil {
-		config.Log.Fatal(err)
-	}
 
+	if cmd.Flag("all").Value.String() == "true" {
+		err := processor.RunAllJobs()
+		if err != nil {
+			config.Log.Fatal(err)
+		}
+	} else {
+		// Check if at least one argument is provided
+		if len(args) < 1 {
+			fmt.Println("Missing argument. Please provide the required argument.")
+			return
+		}
+
+		// Access the argument
+		jobID := args[0]
+		err := processor.RubJobById(jobID)
+		if err != nil {
+			config.Log.Fatal(err)
+		}
+	}
 }
