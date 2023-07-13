@@ -43,11 +43,21 @@ func NewInstagramPostsController() *InstagramPostsController {
 }
 
 func (t *InstagramPostsController) Run() ([]models.TGMessage, error) {
-	insta := goinsta.New(os.Getenv("ig_user"), os.Getenv("ig_pass"))
 
-	err := insta.Login()
+	var insta *goinsta.Instagram
+	insta, err := goinsta.Import("./.cache/.goinsta")
 	if err != nil {
-		fmt.Print("Error login")
+		fmt.Println("Cookies not found. Login in with user/password...")
+		insta = goinsta.New(os.Getenv("ig_user"), os.Getenv("ig_pass"))
+		err := insta.Login()
+		if err != nil {
+			fmt.Println(err)
+		}
+		defer func(ins *goinsta.Instagram, path string) {
+			err := ins.Export(path)
+			if err != nil {
+			}
+		}(insta, "./.cache/.goinsta")
 	}
 
 	initialCodes := t.codes
