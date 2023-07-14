@@ -15,8 +15,7 @@ import (
 )
 
 type InstagramPostsController struct {
-	feedItems []FeedItem
-	codes     CodesSet
+	codes CodesSet
 }
 
 type FeedItem struct {
