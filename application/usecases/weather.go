@@ -54,7 +54,7 @@ func screenshot(target Target, quality int, res *[]byte, elementsToRemove string
 func (w *WeatherController) Run() ([]models.TGMessage, error) {
 	msgAccuweather, err := getForecastSnapshot("Accuweather", "https://www.accuweather.com/en/be/boom/27002/july-weather/27002?year=2024",
 		".monthly-calendar > :first-child, #top, .lbar-banner, .privacy-policy-banner, .fc-dialog-overlay, .fc-dialog-container, .fc-consent-root",
-		325, 670, 940, 1160)
+		325, 550, 940, 865)
 	if err != nil {
 		return nil, err
 	}
@@ -89,10 +89,10 @@ func getForecastSnapshot(title string, url string, elementsToRemove string, x0 i
 	// you can use chromedp as you normally would.
 	ctx, cancel, err := cu.New(cu.NewConfig(
 		// Remove this if you want to see a browser window.
-		cu.WithHeadless(),
+		//cu.WithHeadless(),
 
 		// If the webelement is not found within 10 seconds, timeout.
-		cu.WithTimeout(30*time.Second),
+		cu.WithTimeout(30 * time.Second),
 	))
 	if err != nil {
 		panic(err)
@@ -130,7 +130,7 @@ func getForecastSnapshot(title string, url string, elementsToRemove string, x0 i
 
 	currentDate := time.Now().Format("02/01/2006")
 	text := ` 
-Previsión del tiempo ` + title + ` <b>` + currentDate + `</b>
+Previsión del tiempo ` + title + ` <b> a día ` + currentDate + `</b>
  
 +info: ` + url
 	cbbytes := croppedBuf.Bytes()

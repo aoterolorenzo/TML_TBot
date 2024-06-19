@@ -3,8 +3,8 @@ jobs:
     cronString: "30 9,15,21 * * *"
     response:
       - type: telegram
-        chatID: -1001953829719
-#        topicID: 2641
+        chatID: -1001949361275
+        topicID: 2641
 #  - id: lineUp
 #    cronString: "*/30 * * * *"
 #    response:
