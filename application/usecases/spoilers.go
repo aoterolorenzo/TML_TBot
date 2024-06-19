@@ -53,7 +53,7 @@ func (t *TMLAntiSpoilersController) Run() ([]models.TGMessage, error) {
 
 			// We add a message to the chat, and save its ID
 			// Send a new message to the chat
-			newMessage := tgbotapi.NewMessage(update.Message.Chat.ID, "🚨<b>SPOILER ALERT</b>")
+			newMessage := tgbotapi.NewMessage(update.Message.Chat.ID, "🚨*SPOILER ALERT*")
 
 			if t.responseParams.TopicID != 0 {
 				newMessage.ReplyToMessageID = int(t.responseParams.TopicID)
