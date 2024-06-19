@@ -38,7 +38,7 @@ func (t *TMLAntiSpoilersController) Run() ([]models.TGMessage, error) {
 
 	for update := range updates {
 		if update.Message != nil && update.Message.Chat.ID == int64(t.responseParams.ChatID) &&
-			(t.responseParams.TopicID != 0 && update.Message.ReplyToMessage.MessageID == int(t.responseParams.TopicID)) {
+			(t.responseParams.TopicID == 0 || update.Message.ReplyToMessage.MessageID == int(t.responseParams.TopicID)) {
 			// If we have a msg id, we just remove the message id
 			if t.msgID != math.MinInt64 {
 				deleteMessage := tgbotapi.DeleteMessageConfig{
@@ -53,8 +53,8 @@ func (t *TMLAntiSpoilersController) Run() ([]models.TGMessage, error) {
 
 			// We add a message to the chat, and save its ID
 			// Send a new message to the chat
-			newMessage := tgbotapi.NewMessage(update.Message.Chat.ID, "🚨*SPOILER ALERT*")
-
+			newMessage := tgbotapi.NewMessage(update.Message.Chat.ID, "🚨<b>SPOILER ALERT</b>")
+			newMessage.ParseMode = "HTML"
 			if t.responseParams.TopicID != 0 {
 				newMessage.ReplyToMessageID = int(t.responseParams.TopicID)
 			}

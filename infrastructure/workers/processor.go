@@ -8,7 +8,6 @@ import (
 	"TML_TBot/infrastructure/connectors"
 	"errors"
 	"fmt"
-	"github.com/k0kubun/pp/v3"
 )
 
 type Processor struct {
@@ -71,9 +70,7 @@ func (p *Processor) RunUseCase(job models.Job, useCase interfaces.UseCase) {
 
 // StartCronBot Reads the jobs in the settings and creates a cronjob entry for each one together with its execution function
 func (p *Processor) StartCronBot() {
-	fmt.Println(1)
 	for _, job := range config.Settings.Jobs {
-		pp.Println(job)
 		useCase := parseUseCase(job)
 		if useCase != nil && job.CronString != "loop" {
 			err := p.cronWorker.AddToCron(job, func() { p.RunUseCase(job, useCase) })
