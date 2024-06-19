@@ -5,6 +5,7 @@ import (
 	"TML_TBot/domain/models"
 	"bytes"
 	"context"
+	"fmt"
 	"github.com/chromedp/chromedp"
 	"github.com/disintegration/imaging"
 	"image"
@@ -58,27 +59,28 @@ func (w *WeatherController) Run() ([]models.TGMessage, error) {
 		return nil, err
 	}
 
-	msgMeteoBe, err := getForecastSnapshot("Meteo.be", "https://www.meteo.be/en/boom",
-		".kmcc-cookie-bar--visible, .observation-pp",
-		250, 1870, 1400, 2270)
-	if err != nil {
-		return nil, err
-	}
-	msgMeteoBe.Pin = true
+	//msgMeteoBe, err := getForecastSnapshot("Meteo.be", "https://www.meteo.be/en/boom",
+	//	".kmcc-cookie-bar--visible, .observation-pp",
+	//	250, 1870, 1400, 2270)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//msgMeteoBe.Pin = true
 
-	msgMeteoBeRain, err := getForecastSnapshot("Meteo.be (precipitaciones)", "https://www.meteo.be/en/boom",
-		".kmcc-cookie-bar--visible, .observation-pp",
-		230, 1850, 1350, 2260, `$('.btn-nav__list__item.style-scope.forecast-days')[2].click()`)
-	if err != nil {
-		return nil, err
-	}
+	//msgMeteoBeRain, err := getForecastSnapshot("Meteo.be (precipitaciones)", "https://www.meteo.be/en/boom",
+	//	".kmcc-cookie-bar--visible, .observation-pp",
+	//	230, 1850, 1350, 2260, `$('.btn-nav__list__item.style-scope.forecast-days')[2].click()`)
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	gifmsg, err := getRandomWeatherGifMsg()
 	if err != nil {
 		return nil, err
 	}
 
-	return []models.TGMessage{msgAccuweather, msgMeteoBe, msgMeteoBeRain, gifmsg}, nil
+	//return []models.TGMessage{msgAccuweather, msgMeteoBe, msgMeteoBeRain, gifmsg}, nil
+	return []models.TGMessage{msgAccuweather, gifmsg}, nil
 }
 
 func getForecastSnapshot(title string, url string, elementsToRemove string, x0 int, y0 int, x1 int, y1 int, extraQueries ...string) (models.TGMessage, error) {
@@ -111,9 +113,11 @@ func getForecastSnapshot(title string, url string, elementsToRemove string, x0 i
 		"datastudio", 1600, 1920}
 
 	var buf []byte
+
 	// start the browser
 	if err := chromedp.Run(chromeCtx,
 		screenshot(target, 100, &buf, elementsToRemove, extraQueries)); err != nil {
+		fmt.Println(err.Error())
 		return models.TGMessage{}, err
 	}
 
