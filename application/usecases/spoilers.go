@@ -7,7 +7,6 @@ import (
 	"math"
 	"os"
 )
-import "github.com/k0kubun/pp/v3"
 
 type TMLAntiSpoilersController struct {
 	msgID          int
@@ -38,8 +37,6 @@ func (t *TMLAntiSpoilersController) Run() ([]models.TGMessage, error) {
 	}
 
 	for update := range updates {
-		pp.Print(update.Message)
-
 		if update.Message != nil && update.Message.Chat.ID == int64(t.responseParams.ChatID) &&
 			(t.responseParams.TopicID != 0 && update.Message.ReplyToMessage.MessageID == int(t.responseParams.TopicID)) {
 			// If we have a msg id, we just remove the message id
