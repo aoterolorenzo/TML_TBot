@@ -1,11 +1,11 @@
 package usecases
 
 import (
-	"TML_TBot/config"
 	"TML_TBot/domain/models"
 	"bytes"
 	"context"
 	"fmt"
+	cu "github.com/Davincible/chromedp-undetected"
 	"github.com/chromedp/chromedp"
 	"github.com/disintegration/imaging"
 	"image"
@@ -85,30 +85,19 @@ func (w *WeatherController) Run() ([]models.TGMessage, error) {
 
 func getForecastSnapshot(title string, url string, elementsToRemove string, x0 int, y0 int, x1 int, y1 int, extraQueries ...string) (models.TGMessage, error) {
 
-	opts := append(
-		chromedp.DefaultExecAllocatorOptions[:0], // No default options to prevent chrome account login problems.
-		chromedp.ExecPath("/usr/bin/chromium"),
-		chromedp.WindowSize(1920, 1080),
-		chromedp.Headless,
-		chromedp.NoSandbox,
-		chromedp.NoFirstRun,
-		chromedp.NoDefaultBrowserCheck,
-		chromedp.Flag("disable-extensions", true),
-		chromedp.Flag("disable-dev-shm-usage", true),
-	)
+	// New creates a new context for use with chromedp. With this context
+	// you can use chromedp as you normally would.
+	ctx, cancel, err := cu.New(cu.NewConfig(
+		// Remove this if you want to see a browser window.
+		cu.WithHeadless(),
 
-	ctx, _ := chromedp.NewContext(context.Background(),
-		chromedp.WithLogf(config.Log.Infof),
-		chromedp.WithDebugf(config.Log.Debugf),
-		chromedp.WithErrorf(config.Log.Errorf),
-	)
-
-	c, cancel := chromedp.NewExecAllocator(ctx, opts...)
+		// If the webelement is not found within 10 seconds, timeout.
+		cu.WithTimeout(10*time.Second),
+	))
+	if err != nil {
+		panic(err)
+	}
 	defer cancel()
-
-	chromeCtx, cancel := chromedp.NewContext(
-		c,
-	)
 
 	var target = Target{url,
 		"", 1600, 1920}
@@ -116,7 +105,7 @@ func getForecastSnapshot(title string, url string, elementsToRemove string, x0 i
 	var buf []byte
 
 	// start the browser
-	if err := chromedp.Run(chromeCtx,
+	if err := chromedp.Run(ctx,
 		screenshot(target, 100, &buf, elementsToRemove, extraQueries)); err != nil {
 		fmt.Println(err.Error())
 		return models.TGMessage{}, err
