@@ -87,7 +87,11 @@ func getForecastSnapshot(title string, url string, elementsToRemove string, x0 i
 
 	opts := append(
 		chromedp.DefaultExecAllocatorOptions[:0], // No default options to prevent chrome account login problems.
+		chromedp.ExecPath("/usr/bin/chromium"),
 		chromedp.WindowSize(1920, 1080),
+		chromedp.Headless,
+		chromedp.NoSandbox,
+		chromedp.NoFirstRun,
 		chromedp.NoDefaultBrowserCheck,
 		chromedp.Flag("disable-extensions", true),
 		chromedp.Flag("disable-dev-shm-usage", true),
