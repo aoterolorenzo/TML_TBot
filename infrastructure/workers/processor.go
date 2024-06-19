@@ -31,8 +31,6 @@ func (p *Processor) RunUseCase(job models.Job, useCase interfaces.UseCase) {
 
 	for _, msg := range res {
 		for _, target := range job.Response {
-			fmt.Println(job.Response)
-			fmt.Println(target)
 			if msg.MSG != "" || msg.Media != nil {
 				config.Log.Infof("Sending response to telegram")
 				switch msg.Kind {
@@ -73,7 +71,9 @@ func (p *Processor) StartCronBot() {
 	for _, job := range config.Settings.Jobs {
 		useCase := parseUseCase(job)
 		if useCase != nil && job.CronString != "loop" {
-			err := p.cronWorker.AddToCron(job, func() { p.RunUseCase(job, useCase) })
+			j := job
+
+			err := p.cronWorker.AddToCron(j, func() { p.RunUseCase(j, useCase) })
 			config.Log.Infof("%s job added to Cron: %s", job.ID, job.CronString)
 			if err != nil {
 				config.Log.Error(err)
