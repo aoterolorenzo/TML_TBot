@@ -1,1 +1,2 @@
 externalConfigFile: ./.bots.yml
+logLevel: debug

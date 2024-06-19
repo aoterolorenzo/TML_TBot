@@ -66,7 +66,7 @@ func (t *TMLLineUpController) Run() ([]models.TGMessage, error) {
 	}
 
 	return []models.TGMessage{
-		{diff, nil, models.KindMessage},
+		{diff, nil, models.KindMessage, false},
 	}, nil
 }
 
@@ -90,7 +90,6 @@ func (t *TMLLineUpController) retrieve() (LineUp, error) {
 		})
 		lineUp[day] = stages
 	})
-
 	err := c.Visit("https://www.tomorrowland.com/en/festival/line-up/stages/friday-21-july-2023")
 	if err != nil {
 		return nil, err
@@ -126,7 +125,7 @@ func (t *TMLLineUpController) compareLineUps(lineUp1 LineUp, lineUp2 LineUp) (st
 						} else {
 							// Existen ambos
 							if t1 != time {
-								artistsDiff.Write([]byte(fmt.Sprintf("🔃 <i>%s</i> se mueve de las <i>%s</i> a las <i>%s</i>\n", artist, t1, time)))
+								artistsDiff.Write([]byte(fmt.Sprintf("🔃 <i>%s</i> se mueve de las <i>%s</i> a las <i>%s</i>\n", artist, time, t1)))
 							}
 							delete(lineUp2[day][stage], artist)
 						}

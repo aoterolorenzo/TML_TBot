@@ -22,7 +22,7 @@ func NewTelegramService() *TelegramService {
 	}
 }
 
-func (ts *TelegramService) SendMedia(msg string, media *[]byte, chatID models.ChatID, topic *models.Topic) error {
+func (ts *TelegramService) SendMedia(msg string, media *[]byte, chatID models.ChatID, topic *models.Topic, pin bool) error {
 	imageFileBytes := tgbotapi.FileBytes{
 		Name:  "img.png",
 		Bytes: *media,
@@ -39,15 +39,27 @@ func (ts *TelegramService) SendMedia(msg string, media *[]byte, chatID models.Ch
 		sendMsg.ReplyToMessageID = int(*topic)
 	}
 
-	_, err := ts.bot.Send(sendMsg)
+	m, err := ts.bot.Send(sendMsg)
 	if err != nil {
 		return err
+	}
+
+	if pin {
+		pinChatMessageConfig := tgbotapi.PinChatMessageConfig{
+			ChatID:              int64(chatID),
+			MessageID:           m.MessageID,
+			DisableNotification: false,
+		}
+		_, err = ts.bot.PinChatMessage(pinChatMessageConfig)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-func (ts *TelegramService) SendMessage(msg string, chatID models.ChatID, topic *models.Topic) error {
+func (ts *TelegramService) SendMessage(msg string, chatID models.ChatID, topic *models.Topic, pin bool) error {
 	sendMsg := tgbotapi.NewMessage(int64(chatID), msg)
 	sendMsg.ParseMode = "HTML"
 	sendMsg.Text = msg
@@ -56,15 +68,27 @@ func (ts *TelegramService) SendMessage(msg string, chatID models.ChatID, topic *
 		sendMsg.ReplyToMessageID = int(*topic)
 	}
 
-	_, err := ts.bot.Send(sendMsg)
+	m, err := ts.bot.Send(sendMsg)
 	if err != nil {
 		return err
+	}
+
+	if pin {
+		pinChatMessageConfig := tgbotapi.PinChatMessageConfig{
+			ChatID:              int64(chatID),
+			MessageID:           m.MessageID,
+			DisableNotification: false,
+		}
+		_, err = ts.bot.PinChatMessage(pinChatMessageConfig)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-func (ts *TelegramService) SendAnimation(msg string, media *[]byte, chatID models.ChatID, topic *models.Topic) error {
+func (ts *TelegramService) SendAnimation(msg string, media *[]byte, chatID models.ChatID, topic *models.Topic, pin bool) error {
 	animationMsg := tgbotapi.NewAnimationUpload(int64(chatID), tgbotapi.FileBytes{
 		Name:  "random.gif",
 		Bytes: *media,
@@ -77,9 +101,21 @@ func (ts *TelegramService) SendAnimation(msg string, media *[]byte, chatID model
 		animationMsg.ParseMode = "HTML"
 	}
 
-	_, err := ts.bot.Send(animationMsg)
+	m, err := ts.bot.Send(animationMsg)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if pin {
+		pinChatMessageConfig := tgbotapi.PinChatMessageConfig{
+			ChatID:              int64(chatID),
+			MessageID:           m.MessageID,
+			DisableNotification: false,
+		}
+		_, err = ts.bot.PinChatMessage(pinChatMessageConfig)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

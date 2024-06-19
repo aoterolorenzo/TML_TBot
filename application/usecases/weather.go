@@ -1,6 +1,7 @@
 package usecases
 
 import (
+	"TML_TBot/config"
 	"TML_TBot/domain/models"
 	"bytes"
 	"context"
@@ -23,7 +24,7 @@ type Target struct {
 	ViewY int    `json:"viewY"`
 }
 
-func screenshot(target Target, quality int, res *[]byte) chromedp.Tasks {
+func screenshot(target Target, quality int, res *[]byte, elementsToRemove string, extraQueries []string) chromedp.Tasks {
 	return chromedp.Tasks{
 		chromedp.Navigate(target.Url),
 		chromedp.EmulateViewport(int64(target.ViewX), int64(target.ViewY)),
@@ -31,11 +32,17 @@ func screenshot(target Target, quality int, res *[]byte) chromedp.Tasks {
 		chromedp.ActionFunc(func(ctx context.Context) error {
 			// Hide specific divs
 			var x string
-			chromedp.EvaluateAsDevTools(`document.querySelectorAll('.monthly-calendar > :first-child, #top, .lbar-banner, .privacy-policy-banner, .fc-dialog-overlay, .fc-dialog-container, .fc-consent-root')
+			chromedp.EvaluateAsDevTools(`document.querySelectorAll('`+elementsToRemove+`')
 					.forEach(function(el) {
 						el.parentNode.removeChild(el);
 					});
+
 			`, &x).Do(ctx)
+
+			for _, extraQuery := range extraQueries {
+				chromedp.Sleep(1 * time.Second)
+				chromedp.EvaluateAsDevTools(extraQuery, &x).Do(ctx)
+			}
 			return nil
 		}),
 		chromedp.Sleep(3 * time.Second),
@@ -44,74 +51,101 @@ func screenshot(target Target, quality int, res *[]byte) chromedp.Tasks {
 }
 
 func (w *WeatherController) Run() ([]models.TGMessage, error) {
+	msgAccuweather, err := getForecastSnapshot("Accuweather", "https://www.accuweather.com/en/be/boom/27002/july-weather/27002",
+		".monthly-calendar > :first-child, #top, .lbar-banner, .privacy-policy-banner, .fc-dialog-overlay, .fc-dialog-container, .fc-consent-root",
+		325, 670, 940, 1160)
+	if err != nil {
+		return nil, err
+	}
+
+	msgMeteoBe, err := getForecastSnapshot("Meteo.be", "https://www.meteo.be/en/boom",
+		".kmcc-cookie-bar--visible, .observation-pp",
+		250, 1870, 1400, 2270)
+	if err != nil {
+		return nil, err
+	}
+	msgMeteoBe.Pin = true
+
+	msgMeteoBeRain, err := getForecastSnapshot("Meteo.be (precipitaciones)", "https://www.meteo.be/en/boom",
+		".kmcc-cookie-bar--visible, .observation-pp",
+		230, 1850, 1350, 2260, `$('.btn-nav__list__item.style-scope.forecast-days')[2].click()`)
+	if err != nil {
+		return nil, err
+	}
+
+	gifmsg, err := getRandomWeatherGifMsg()
+	if err != nil {
+		return nil, err
+	}
+
+	return []models.TGMessage{msgAccuweather, msgMeteoBe, msgMeteoBeRain, gifmsg}, nil
+}
+
+func getForecastSnapshot(title string, url string, elementsToRemove string, x0 int, y0 int, x1 int, y1 int, extraQueries ...string) (models.TGMessage, error) {
 
 	opts := append(
 		chromedp.DefaultExecAllocatorOptions[:0], // No default options to prevent chrome account login problems.
 		chromedp.WindowSize(1920, 1080),
-		//chromedp.Headless,
+		chromedp.Headless,
 		chromedp.NoSandbox,
+		chromedp.NoFirstRun,
+		chromedp.NoDefaultBrowserCheck,
+		chromedp.Flag("disable-extensions", true),
+		chromedp.Flag("disable-dev-shm-usage", true),
 	)
 
-	c, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
+	ctx, _ := chromedp.NewContext(context.Background(),
+		chromedp.WithLogf(config.Log.Infof),
+		chromedp.WithDebugf(config.Log.Debugf),
+		chromedp.WithErrorf(config.Log.Errorf),
+	)
+
+	c, cancel := chromedp.NewExecAllocator(ctx, opts...)
 	defer cancel()
 
 	chromeCtx, cancel := chromedp.NewContext(
 		c,
 	)
 
-	var target = Target{"https://www.accuweather.com/en/be/boom/27002/july-weather/27002", "datastudio", 966, 1308}
+	var target = Target{url,
+		"datastudio", 1600, 1920}
 
 	var buf []byte
 	// start the browser
 	if err := chromedp.Run(chromeCtx,
-		screenshot(target, 90, &buf)); err != nil {
-		return nil, err
+		screenshot(target, 100, &buf, elementsToRemove, extraQueries)); err != nil {
+		return models.TGMessage{}, err
 	}
 
 	// Load the captured screenshot into an image object
 	img, err := imaging.Decode(bytes.NewReader(buf))
 	if err != nil {
-		return nil, err
+		return models.TGMessage{}, err
 	}
 
 	// Define the area to be cropped
-	cropArea := image.Rect(20, 670, 600, 1160) // Example: (x1, y1, x2, y2)
+	cropArea := image.Rect(x0, y0, x1, y1) // Example: (x1, y1, x2, y2)
 	// Crop the image to the specified area
 	croppedImg := imaging.Crop(img, cropArea)
 
 	// Encode the cropped image to PNG format
 	croppedBuf := new(bytes.Buffer)
 	if err := imaging.Encode(croppedBuf, croppedImg, imaging.PNG); err != nil {
-		return nil, err
+		return models.TGMessage{}, err
 	}
-
-	//// Save the cropped image to a file
-	//file := fmt.Sprintf("./assets/cropped--report-%s.png", target.Name)
-	//if err := ioutil.WriteFile(file, croppedBuf.Bytes(), 0o644); err != nil {
-	//	return nil, err
-	//}
 
 	currentDate := time.Now().Format("02/01/2006")
 	text := ` 
-Previsión del tiempo Accuweather <b>` + currentDate + `</b>
+Previsión del tiempo ` + title + ` <b>` + currentDate + `</b>
  
-+info: https://www.accuweather.com/es/be/boom/27002/july-weather/27002`
++info: ` + url
 	cbbytes := croppedBuf.Bytes()
 
 	msg1 := models.NewTGMessage(text, &cbbytes, models.KindMedia)
-
-	gif, err := getRandomWeatherGif()
-	if err != nil {
-		return nil, err
-	}
-
-	msg2 := models.NewTGMessage("", gif, models.KindAnimation)
-	response := []models.TGMessage{*msg1, *msg2}
-	return response, nil
+	return *msg1, nil
 }
 
-func getRandomWeatherGif() (*[]byte, error) {
-	// Generate a random number between 1 and 15
+func getRandomWeatherGifMsg() (models.TGMessage, error) {
 	rand.Seed(time.Now().UnixNano())
 	randomNumber := rand.Intn(15) + 1
 
@@ -119,8 +153,11 @@ func getRandomWeatherGif() (*[]byte, error) {
 
 	gif2Bytes, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		return nil, err
+		return models.TGMessage{}, err
 	}
 
-	return &gif2Bytes, nil
+	msg := models.NewTGMessage("", &gif2Bytes, models.KindAnimation)
+	response := *msg
+	return response, nil
+
 }

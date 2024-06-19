@@ -18,6 +18,7 @@ var Settings = &GlobalSettings{}
 type GlobalSettings struct {
 	Jobs          []models.Job `yaml:"jobs"`
 	ExtConfigFile string       `yaml:"externalConfigFile"`
+	LogLevel      string       `yaml:"logLevel"`
 }
 
 func init() {

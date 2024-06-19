@@ -17,9 +17,12 @@ FROM chromedp/headless-shell:latest as deploy
 
 WORKDIR /
 COPY --from=build /bot /bot
+COPY .bots.yml .bots.yml
 COPY ./assets /assets
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
+RUN rm -rf /etc/localtime
+RUN ln -s /usr/share/zoneinfo/Europe/Madrid /etc/localtime
 
 USER 1001:1001
 
