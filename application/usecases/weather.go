@@ -52,7 +52,7 @@ func screenshot(target Target, quality int, res *[]byte, elementsToRemove string
 }
 
 func (w *WeatherController) Run() ([]models.TGMessage, error) {
-	msgAccuweather, err := getForecastSnapshot("Accuweather", "https://www.accuweather.com/en/be/boom/27002/july-weather/27002",
+	msgAccuweather, err := getForecastSnapshot("Accuweather", "https://www.accuweather.com/en/be/boom/27002/july-weather/27002?year=2024",
 		".monthly-calendar > :first-child, #top, .lbar-banner, .privacy-policy-banner, .fc-dialog-overlay, .fc-dialog-container, .fc-consent-root",
 		325, 670, 940, 1160)
 	if err != nil {
@@ -88,9 +88,6 @@ func getForecastSnapshot(title string, url string, elementsToRemove string, x0 i
 	opts := append(
 		chromedp.DefaultExecAllocatorOptions[:0], // No default options to prevent chrome account login problems.
 		chromedp.WindowSize(1920, 1080),
-		chromedp.Headless,
-		chromedp.NoSandbox,
-		chromedp.NoFirstRun,
 		chromedp.NoDefaultBrowserCheck,
 		chromedp.Flag("disable-extensions", true),
 		chromedp.Flag("disable-dev-shm-usage", true),
@@ -110,7 +107,7 @@ func getForecastSnapshot(title string, url string, elementsToRemove string, x0 i
 	)
 
 	var target = Target{url,
-		"datastudio", 1600, 1920}
+		"", 1600, 1920}
 
 	var buf []byte
 
