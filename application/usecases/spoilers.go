@@ -24,7 +24,7 @@ type TMLAntiSpoilersController struct {
 func NewTMLAntiSpoilersController(job models.Job) *TMLAntiSpoilersController {
 	msgs, err := readMessagesFromNDJSONFile(SPOILERS_CACHE_FILE)
 	if err != nil {
-		panic(errors.Join(errors.New(fmt.Sprintf("unable to open file: %s", SPOILERS_CACHE_FILE)), err))
+		panic(errors.New(fmt.Sprintf("unable to open file: %s", SPOILERS_CACHE_FILE)))
 	}
 
 	return &TMLAntiSpoilersController{
