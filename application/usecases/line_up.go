@@ -4,6 +4,7 @@ import (
 	"TML_TBot/domain/models"
 	"encoding/json"
 	"fmt"
+	"github.com/k0kubun/pp/v3"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -11,64 +12,69 @@ import (
 )
 
 // URLs for website 1
-var artistsURL = "https://www.tomorrowland.com/api/v2?method=LineUp.getArtists&eventid=17&format=json"
-var stagesURL = "https://www.tomorrowland.com/api/v2?method=LineUp.getStages&eventid=17&format=json"
+var W1Url = "https://artist-lineup-cdn.tomorrowland.com/TLBE24-W1-211903bb-da4c-445d-a1b3-6b17479a9fab.json"
+var W2Url = "https://artist-lineup-cdn.tomorrowland.com/TLBE24-W2-211903bb-da4c-445d-a1b3-6b17479a9fab.json"
+
+const LINEUP_CACHE_FILE = "./.cache/lineUp.json"
 
 // CustomTime is a custom time type to handle the non-standard time format
 type CustomTime struct {
 	time.Time
 }
 
-// UnmarshalJSON customizes the unmarshalling of CustomTime
+// UnmarshalJSON parses a time string into a CustomTime
 func (ct *CustomTime) UnmarshalJSON(b []byte) error {
-	str := string(b)
-	// Trim the quotes
-	str = str[1 : len(str)-1]
+	// Trim the quotes around the time string
+	timeStr := strings.Trim(string(b), "\"")
 
-	// Parse the time
-	t, err := time.Parse("2006-01-02 15:04:05-07:00", str)
+	const layout = `2006-01-02 15:04:05-07:00`
+	t, err := time.Parse(layout, timeStr)
 	if err != nil {
-		return err
+		t, err = time.Parse("2006-01-02T15:04:05-07:00", timeStr)
+		if err != nil {
+			pp.Println(err)
+		}
 	}
+
 	ct.Time = t
+
 	return nil
+}
+
+func (ct CustomTime) To12HourFormat() string {
+	return ct.Time.Format("03:04pm")
 }
 
 // Artist represents an artist with performances
 type Artist struct {
-	ID           string        `json:"id"`
-	Name         string        `json:"name"`
-	UID          string        `json:"uid"`
-	Performances []Performance `json:"performances"`
-	Image        string        `json:"image"`
-	Facebook     string        `json:"facebook"`
-	Twitter      string        `json:"twitter"`
-	Youtube      string        `json:"youtube"`
-	Soundcloud   string        `json:"soundcloud"`
-	Instagram    string        `json:"instagram"`
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	Image     string `json:"image"`
+	Instagram string `json:"instagram"`
+	Spotify   string `json:"spotify"`
+}
+
+// Stage represents a stage
+type Stage struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
 
 // Performance represents a performance of an artist
 type Performance struct {
 	ID        string     `json:"id"`
-	StageID   string     `json:"stage_id"`
-	StartTime CustomTime `json:"start_time"`
-	EndTime   CustomTime `json:"end_time"`
-}
-
-// Stage represents a stage
-type Stage struct {
-	ID       string `json:"id"`
-	Host     string `json:"host"`
-	Name     string `json:"name"`
-	Priority int    `json:"priority"`
-	Color    string `json:"color"`
+	Name      string     `json:"name"`
+	Artists   []Artist   `json:"artists"`
+	Stage     Stage      `json:"stage"`
+	Date      string     `json:"date"`
+	Day       string     `json:"day"`
+	StartTime CustomTime `json:"startTime"`
+	EndTime   CustomTime `json:"endTime"`
 }
 
 // Data represents the structure of JSON data
 type Data struct {
-	Artists []Artist `json:"artists"`
-	Stages  []Stage  `json:"stages"`
+	Performances []Performance `json:"performances"`
 }
 
 // FetchJSON fetches JSON data from a URL
@@ -87,129 +93,93 @@ func FetchJSON(url string, target interface{}) error {
 	return json.Unmarshal(bytes, target)
 }
 
-// MergeData merges artists and stages data into a single Data struct
-func MergeData(artistsURL, stagesURL string) (Data, error) {
+// RetrieveData retrieves data from a URL into a single Data struct
+func RetrieveData(url string) (Data, error) {
 	var data Data
-	var artists struct {
-		Artists []Artist `json:"artists"`
-	}
-	var stages struct {
-		Stages []Stage `json:"stages"`
-	}
-
-	err := FetchJSON(artistsURL, &artists)
+	err := FetchJSON(url, &data)
 	if err != nil {
-		return data, fmt.Errorf("error fetching artists: %v", err)
+		return data, fmt.Errorf("error fetching data: %v", err)
 	}
-	err = FetchJSON(stagesURL, &stages)
-	if err != nil {
-		return data, fmt.Errorf("error fetching stages: %v", err)
-	}
-
-	data.Artists = artists.Artists
-	data.Stages = stages.Stages
-
 	return data, nil
 }
 
-// CompareData compares artists and performances from two sources and prints the differences
+// CompareData compares performances from two sources and prints the differences
 func CompareData(data1, data2 Data) string {
 	// Create maps for easy lookup
-	artistsMap1 := make(map[string]Artist)
-	artistsMap2 := make(map[string]Artist)
-	stagesMap := make(map[string]Stage)
-
-	for _, artist := range data1.Artists {
-		artistsMap1[artist.ID] = artist
-	}
-	for _, artist := range data2.Artists {
-		artistsMap2[artist.ID] = artist
-	}
-	for _, stage := range data1.Stages {
-		stagesMap[stage.ID] = stage
-	}
-	for _, stage := range data2.Stages {
-		stagesMap[stage.ID] = stage
-	}
-
-	var artistsDiff strings.Builder
-
-	// Compare artists and performances
-	for id, artist1 := range artistsMap1 {
-		if artist2, exists := artistsMap2[id]; exists {
-			artistsDiff.WriteString(comparePerformances(artist1, artist2, stagesMap))
-		} else {
-			for _, perf := range artist1.Performances {
-				artistsDiff.Write([]byte(fmt.Sprintf("❌ Stage %s: Eliminado <i>%s</i> (<i>%s</i>)\n", stagesMap[perf.StageID].Name, artist1.Name, perf.StartTime))) //stage, day
-			}
-		}
-	}
-
-	for id, artist2 := range artistsMap2 {
-		if _, exists := artistsMap1[id]; !exists {
-			for _, perf := range artist2.Performances {
-				artistsDiff.Write([]byte(fmt.Sprintf("✅ Stage %s: Añadido <i>%s</i> (<i>%s</i>)\n", stagesMap[perf.StageID].Name, artist2.Name, perf.StartTime))) //stage, day
-
-			}
-		}
-	}
-
-	return artistsDiff.String()
-}
-
-func comparePerformances(artist1, artist2 Artist, stagesMap map[string]Stage) string {
 	perfMap1 := make(map[string]Performance)
 	perfMap2 := make(map[string]Performance)
 
-	var artistsDiff strings.Builder
-
-	for _, perf := range artist1.Performances {
+	for _, perf := range data1.Performances {
 		perfMap1[perf.ID] = perf
 	}
-	for _, perf := range artist2.Performances {
+	for _, perf := range data2.Performances {
 		perfMap2[perf.ID] = perf
 	}
 
+	var performancesDiff strings.Builder
+
+	// Compare performances
 	for id, perf1 := range perfMap1 {
 		if perf2, exists := perfMap2[id]; exists {
-			if perf1.StageID != perf2.StageID || !perf1.StartTime.Equal(perf2.StartTime.Time) || !perf1.EndTime.Equal(perf2.EndTime.Time) {
-				artistsDiff.Write([]byte(fmt.Sprintf("🔁 Stage %s: Se mueve <i>%s</i> (<i>%s</i>)\n", stagesMap[perf1.StageID].Name, artist1.Name, perf1.StartTime))) //stage, day
+			if perf1.Stage.ID != perf2.Stage.ID || !perf1.StartTime.Equal(perf2.StartTime.Time) || !perf1.EndTime.Equal(perf2.EndTime.Time) {
+				performancesDiff.WriteString(fmt.Sprintf("🔁 <b>%s</b>: Se mueve <b>%s</b> de %s/%s/%s a %s/%s/%s\n", perf1.Stage.Name, perf1.Name,
+					whichWeekend(perf1.StartTime), perf1.Day, perf1.StartTime.To12HourFormat(),
+					whichWeekend(perf2.StartTime), perf2.Day, perf2.StartTime.To12HourFormat()))
 			}
 		} else {
-			artistsDiff.Write([]byte(fmt.Sprintf("❌ Stage %s: Eliminado <i>%s</i> (<i>%s</i>)\n", stagesMap[perf1.StageID].Name, artist1.Name, perf1.StartTime))) //stage, day
+
+			performancesDiff.WriteString(fmt.Sprintf("❌ <b>%s</b>: Eliminado <b>%s</b> (<i>%s/%s/%s</i>)\n", perf1.Stage.Name, perf1.Name, whichWeekend(perf1.StartTime), perf1.Day, perf1.StartTime.To12HourFormat()))
 		}
 	}
 
 	for id, perf2 := range perfMap2 {
 		if _, exists := perfMap1[id]; !exists {
-			artistsDiff.Write([]byte(fmt.Sprintf("✅ Stage %s: Añadido <i>%s</i> (<i>%s</i>)\n", stagesMap[perf2.StageID].Name, artist2.Name, perf2.StartTime))) //stage, day
+			performancesDiff.WriteString(fmt.Sprintf("✅ <b>%s</b>: Añadido <b>%s</b> (<i>%s/%s/%s</i>)\n", perf2.Stage.Name, perf2.Name, whichWeekend(perf2.StartTime), perf2.Day, perf2.StartTime.To12HourFormat()))
 		}
 	}
 
-	return artistsDiff.String()
+	return performancesDiff.String()
 }
 
 type TMLLineUpController struct {
-	lineUp Data
+	Performances Data
 }
 
 func NewTMLLineUpController() *TMLLineUpController {
-
-	data, err := MergeData(artistsURL, stagesURL)
+	var performances Data
+	var fileData Data
+	err := ReadStructFromJSONFile(LINEUP_CACHE_FILE, &fileData)
 	if err != nil {
-		fmt.Printf("Error merging data from website 1: %v\n", err)
-		return nil
+		fmt.Println(err)
+	}
+
+	if len(fileData.Performances) == 0 {
+		data, err := RetrieveData(W1Url)
+		performances.Performances = data.Performances
+		if err != nil {
+			fmt.Printf("Error merging data from Performances: %v\n", err)
+			return nil
+		}
+
+		data2, err := RetrieveData(W2Url)
+		performances.Performances = append(performances.Performances, data2.Performances...)
+		if err != nil {
+			fmt.Printf("Error merging data from w2: %v\n", err)
+			return nil
+		}
+
+	} else {
+		performances = Data{fileData.Performances}
 	}
 
 	return &TMLLineUpController{
-		lineUp: data,
+		Performances: performances,
 	}
-
 }
 
 func (l *TMLLineUpController) Run() ([]models.TGMessage, error) {
 	msg := l.updateAndCompare()
-
+	fmt.Println(msg)
 	return []models.TGMessage{
 		{
 			MSG:   msg,
@@ -220,11 +190,62 @@ func (l *TMLLineUpController) Run() ([]models.TGMessage, error) {
 }
 
 func (l *TMLLineUpController) updateAndCompare() string {
-	data, err := MergeData(artistsURL, stagesURL)
+	dataW1, err := RetrieveData(W1Url)
+	if err != nil {
+		fmt.Printf("Error merging data from website 1: %v\n", err)
+		return ""
+	}
+
+	dataW2, err := RetrieveData(W2Url)
 	if err != nil {
 		fmt.Printf("Error merging data from website 2: %v\n", err)
 		return ""
 	}
 
-	return CompareData(l.lineUp, data)
+	performances := append(dataW1.Performances, dataW2.Performances...)
+
+	response := CompareData(l.Performances, Data{Performances: performances})
+
+	err = WriteStructToJSONFile(LINEUP_CACHE_FILE, Data{Performances: performances})
+	if err != nil {
+		return err.Error()
+	}
+	return response
+}
+
+// WriteStructToJSONFile writes any struct to a JSON file
+func WriteStructToJSONFile(filename string, data interface{}) error {
+	jsonData, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal data: %w", err)
+	}
+
+	err = ioutil.WriteFile(filename, jsonData, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to write file: %w", err)
+	}
+
+	return nil
+}
+
+// ReadStructFromJSONFile reads data from a JSON file into the provided struct
+func ReadStructFromJSONFile(filename string, data interface{}) error {
+	fileData, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return fmt.Errorf("failed to read file: %w", err)
+	}
+
+	err = json.Unmarshal(fileData, data)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal data: %w", err)
+	}
+
+	return nil
+}
+
+func whichWeekend(time CustomTime) string {
+	if time.Day() < 25 {
+		return "W1"
+	}
+	return "W2"
 }
