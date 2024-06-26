@@ -202,11 +202,13 @@ func (l *TMLLineUpController) updateAndCompare() string {
 		return ""
 	}
 
-	performances := append(dataW1.Performances, dataW2.Performances...)
+	performances := Data{Performances: append(dataW1.Performances, dataW2.Performances...)}
 
-	response := CompareData(l.Performances, Data{Performances: performances})
+	response := CompareData(l.Performances, performances)
 
-	err = WriteStructToJSONFile(LINEUP_CACHE_FILE, Data{Performances: performances})
+	// Save new performances to struct and file
+	l.Performances = performances
+	err = WriteStructToJSONFile(LINEUP_CACHE_FILE, performances)
 	if err != nil {
 		return err.Error()
 	}
