@@ -100,7 +100,7 @@ func getForecastSnapshot(title string, url string, elementsToRemove string, x0 i
 		cu.WithHeadless(),
 
 		// If the webelement is not found within 10 seconds, timeout.
-		cu.WithTimeout(30*time.Second),
+		cu.WithTimeout(60*time.Second),
 	))
 	if err != nil {
 		panic(err)
