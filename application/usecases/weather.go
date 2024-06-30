@@ -79,6 +79,14 @@ func (w *WeatherController) Run() ([]models.TGMessage, error) {
 		return nil, err
 	}
 
+	if IsRainRadarTime() {
+		rc := RainController{}
+		msgs, err := rc.Run()
+		if err == nil {
+			return []models.TGMessage{msgAccuweather, msgs[0], gifmsg}, nil
+		}
+	}
+
 	//return []models.TGMessage{msgAccuweather, msgMeteoBe, msgMeteoBeRain, gifmsg}, nil
 	return []models.TGMessage{msgAccuweather, gifmsg}, nil
 }
@@ -154,4 +162,24 @@ func getRandomWeatherGifMsg() (models.TGMessage, error) {
 	response := *msg
 	return response, nil
 
+}
+
+func IsRainRadarTime() bool {
+	// Define the target date
+	targetDateStr := "17/07/2024"
+	targetDate, err := time.Parse("02/01/2006", targetDateStr)
+	if err != nil {
+		return false
+	}
+
+	// Get the current date
+	currentDate := time.Now()
+
+	// Check if the current date is after the target date
+	if currentDate.Before(targetDate) {
+		// Perform the action if the date is surpassed
+		return true
+	}
+
+	return false
 }

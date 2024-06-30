@@ -33,6 +33,11 @@ func (p *Processor) RunUseCase(job models.Job, useCase interfaces.UseCase) {
 		for _, target := range job.Response {
 			if msg.MSG != "" || msg.Media != nil {
 				config.Log.Infof("Sending response to telegram")
+
+				if msg.UnpinAll {
+					p.telegram.UnPinAll(target.ChatID, &target.TopicID)
+				}
+
 				switch msg.Kind {
 				case models.KindMessage:
 					err := p.telegram.SendMessage(msg.MSG, target.ChatID, &target.TopicID, msg.Pin)
@@ -135,6 +140,8 @@ func parseUseCase(job models.Job) interfaces.UseCase {
 		return usecases.NewInstagramPostsController()
 	case "antiSpoilers":
 		return usecases.NewTMLAntiSpoilersController(job)
+	case "rain":
+		return usecases.RainController{}
 	}
 	config.Log.Errorf("Unparseable %s job", job.ID)
 	return nil

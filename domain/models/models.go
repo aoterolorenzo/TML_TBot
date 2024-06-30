@@ -25,10 +25,11 @@ const (
 type TGMessageArray []TGMessage
 
 type TGMessage struct {
-	MSG   string
-	Media *[]byte
-	Kind  Kind
-	Pin   bool
+	MSG      string
+	Media    *[]byte
+	Kind     Kind
+	Pin      bool
+	UnpinAll bool
 }
 
 func NewTGMessage(msg string, media *[]byte, kind Kind) *TGMessage {

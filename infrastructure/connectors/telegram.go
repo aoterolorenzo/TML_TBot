@@ -120,3 +120,11 @@ func (ts *TelegramService) SendAnimation(msg string, media *[]byte, chatID model
 
 	return nil
 }
+
+func (ts *TelegramService) UnPinAll(chatID models.ChatID, topic *models.Topic) {
+	unpinConfig := tgbotapi.UnpinChatMessageConfig{
+		ChatID: int64(chatID),
+	}
+
+	ts.bot.UnpinChatMessage(unpinConfig)
+}

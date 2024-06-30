@@ -11,6 +11,7 @@ jobs:
       - type: telegram
         chatID: -1001949361275
         topicID: 139
+        #topicID: 139
 #  - id: instagramPost
 #    cronString: "* /5 * * * *"
 #    response:
