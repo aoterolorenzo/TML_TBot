@@ -176,7 +176,7 @@ func IsRainRadarTime() bool {
 	currentDate := time.Now()
 
 	// Check if the current date is after the target date
-	if currentDate.Before(targetDate) {
+	if currentDate.After(targetDate) {
 		// Perform the action if the date is surpassed
 		return true
 	}
