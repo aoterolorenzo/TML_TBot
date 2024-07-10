@@ -59,20 +59,20 @@ func (w *WeatherController) Run() ([]models.TGMessage, error) {
 		return nil, err
 	}
 
-	//msgMeteoBe, err := getForecastSnapshot("Meteo.be", "https://www.meteo.be/en/boom",
-	//	".kmcc-cookie-bar--visible, .observation-pp",
-	//	250, 1870, 1400, 2270)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//msgMeteoBe.Pin = true
+	msgMeteoBe, err := getForecastSnapshot("Meteo.be", "https://www.meteo.be/en/boom",
+		".kmcc-cookie-bar--visible, .observation-pp",
+		230, 1700, 1380, 3060, `$('.forecast-days__item').attr('style', 'display: block !important')`)
+	if err != nil {
+		return nil, err
+	}
+	msgMeteoBe.Pin = true
 
-	//msgMeteoBeRain, err := getForecastSnapshot("Meteo.be (precipitaciones)", "https://www.meteo.be/en/boom",
-	//	".kmcc-cookie-bar--visible, .observation-pp",
-	//	230, 1850, 1350, 2260, `$('.btn-nav__list__item.style-scope.forecast-days')[2].click()`)
-	//if err != nil {
-	//	return nil, err
-	//}
+	/*msgMeteoBeRain, err := getForecastSnapshot("Meteo.be (precipitaciones)", "https://www.meteo.be/en/boom",
+		".kmcc-cookie-bar--visible, .observation-pp",
+		230, 1850, 1350, 2260, `$('.btn-nav__list__item.style-scope.forecast-days')[2].click()`)
+	if err != nil {
+		return nil, err
+	}*/
 
 	gifmsg, err := getRandomWeatherGifMsg()
 	if err != nil {
@@ -83,12 +83,12 @@ func (w *WeatherController) Run() ([]models.TGMessage, error) {
 		rc := RainController{}
 		msgs, err := rc.Run()
 		if err == nil {
-			return []models.TGMessage{msgAccuweather, msgs[0], gifmsg}, nil
+			return []models.TGMessage{msgAccuweather, msgMeteoBe /*msgMeteoBeRain, */, msgs[0], gifmsg}, nil
 		}
 	}
 
 	//return []models.TGMessage{msgAccuweather, msgMeteoBe, msgMeteoBeRain, gifmsg}, nil
-	return []models.TGMessage{msgAccuweather, gifmsg}, nil
+	return []models.TGMessage{msgAccuweather, msgMeteoBe /*msgMeteoBeRain, */, gifmsg}, nil
 }
 
 func getForecastSnapshot(title string, url string, elementsToRemove string, x0 int, y0 int, x1 int, y1 int, extraQueries ...string) (models.TGMessage, error) {
@@ -166,7 +166,7 @@ func getRandomWeatherGifMsg() (models.TGMessage, error) {
 
 func IsRainRadarTime() bool {
 	// Define the target date
-	targetDateStr := "17/07/2024"
+	targetDateStr := "16/07/2024"
 	targetDate, err := time.Parse("02/01/2006", targetDateStr)
 	if err != nil {
 		return false
