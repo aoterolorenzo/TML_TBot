@@ -181,5 +181,5 @@ func IsRainRadarTime() bool {
 		return true
 	}
 
-	return false
+	return true
 }
