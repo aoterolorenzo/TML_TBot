@@ -1,6 +1,6 @@
 jobs:
   - id: weather
-    cronString: "00 7,19 * * *"
+    cronString: "00 7,13,19 * * *"
     response:
       - type: telegram
         chatID: -1001949361275
