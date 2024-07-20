@@ -79,7 +79,7 @@ func (w *WeatherController) Run() ([]models.TGMessage, error) {
 		return nil, err
 	}
 
-	if IsRainRadarTime() {
+	if IsRainRadarTime() || true {
 		rc := RainController{}
 		msgs, err := rc.Run()
 		if err == nil {
