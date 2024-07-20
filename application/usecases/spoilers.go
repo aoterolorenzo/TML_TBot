@@ -62,7 +62,7 @@ func (t *TMLAntiSpoilersController) Run() ([]models.TGMessage, error) {
 
 		for !topicCheckPassed && currentMsg != nil {
 			// if it has father (currentMsg.ReplyToMessage) and ReplyToMessage IS topic
-			if currentMsg.ReplyToMessage != nil && (currentMsg.ReplyToMessage.MessageID == int(t.responseParams.TopicID) || currentMsg.ReplyToMessage.MessageID == 3214) {
+			if currentMsg.ReplyToMessage != nil && currentMsg.ReplyToMessage.MessageID == int(t.responseParams.TopicID) {
 				// topicCheckPassed, activate spoiler process
 				topicCheckPassed = true
 			} else if currentMsg.ReplyToMessage != nil {
