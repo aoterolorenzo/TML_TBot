@@ -124,7 +124,7 @@ func downloadFileToBytes(url string) ([]byte, error) {
 }
 
 func sendAudioToChatGPT(filePath string) (string, error) {
-	client := openai.NewClient(os.Getenv("TOKEN"))
+	client := openai.NewClient(os.Getenv("OPENAI_TOKEN"))
 
 	// Step 1: Transcribe the audio using Whisper API with Spanish language
 	audioReq := openai.AudioRequest{
