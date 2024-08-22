@@ -85,10 +85,8 @@ func (p *Processor) StartCronBot() {
 			}
 		} else if job.CronString == "loop" {
 			go func() {
-				_, err := useCase.Run()
-				if err != nil {
-					panic(err)
-				}
+				j := job
+				p.RunUseCase(j, useCase)
 			}()
 		} else {
 			config.Log.Infof("Skipping  %s job", job.ID)
@@ -138,6 +136,8 @@ func parseUseCase(job models.Job) interfaces.UseCase {
 		return usecases.NewTMLLineUpController()
 	case "instagramPost":
 		return usecases.NewInstagramPostsController()
+	case "sumarize":
+		return usecases.NewTMLSumarizerController(job)
 	case "antiSpoilers":
 		return usecases.NewTMLAntiSpoilersController(job)
 	case "rain":
