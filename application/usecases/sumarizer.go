@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
-	"github.com/sashabaranov/go-openai" // Ensure you've installed this package
+	"github.com/sashabaranov/go-openai"
 	"io/ioutil"
 	"math"
 	"net/http"
@@ -84,14 +84,14 @@ func (t *TMLSumarizerController) Run() ([]models.TGMessage, error) {
 
 				// Download the file
 				fileURL := file.Link(t.botToken)
-				err = downloadFile(fileURL, "./audio.ogg")
+				err = downloadFile(fileURL, "./.cache/audio.ogg")
 				if err != nil {
 					config.Log.Error(fmt.Sprintf("Failed to download audio file: %v", err))
 					continue
 				}
 
 				// Send audio to ChatGPT API
-				responseText, err := sendAudioToChatGPT("./audio.ogg")
+				responseText, err := sendAudioToChatGPT("./.cache/audio.ogg")
 				if err != nil {
 					config.Log.Error(fmt.Sprintf("Failed to send audio to ChatGPT: %v", err))
 					continue
